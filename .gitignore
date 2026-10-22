@@ -1,0 +1,31 @@
+# Local runtime data (may contain student/member information)
+data/*.db
+data/*.db-*
+data/*.sqlite
+data/*.sqlite-*
+data/staff-backups/
+
+# Runtime logs and process markers
+logs/
+staff-tool/logs/
+*.log
+*.pid
+
+# Generated visual/test artifacts
+.staff-check/
+.pptx-build/
+
+# Dependencies and editor/OS files
+node_modules/
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Test coverage and temporary files
+coverage/
+*.tmp
+*.bak

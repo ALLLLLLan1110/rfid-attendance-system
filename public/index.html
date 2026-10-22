@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fafbf9">
+  <meta name="description" content="KL9007U RFID 学生一卡通签到签退系统">
+  <title>校园一卡通 · RFID 考勤台</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">校</span><strong>校园一卡通</strong><span class="brand-divider" aria-hidden="true">/</span><small>考勤工作台</small></div>
+    <div class="reader-status" id="reader-status" data-status="starting"><i></i><span>正在连接读卡器</span><button id="reader-retry" type="button">重连</button></div>
+  </header>
+
+  <main>
+    <section class="overview" aria-label="今日考勤概览">
+      <div class="page-heading"><p class="eyebrow">CAMPUS ATTENDANCE</p><h1>每一次到校，都有记录。</h1></div>
+      <div class="stats">
+        <article><span>登记学生</span><strong id="stat-students">—</strong></article>
+        <article><span>今日签到</span><strong id="stat-checkins">—</strong></article>
+        <article><span>当前在校</span><strong id="stat-present">—</strong></article>
+        <article><span>今日签退</span><strong id="stat-checkouts">—</strong></article>
+      </div>
+    </section>
+
+    <div class="desk">
+    <section class="terminal" aria-label="刷卡终端">
+    <section class="scanner">
+      <div class="scanner-copy">
+        <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>读卡终端</p>
+        <h2 id="scan-title">请将学生卡放到读卡器上</h2>
+        <p id="scan-help">第一次刷卡自动签到，再次刷卡自动签退。</p>
+        <p id="reader-detail" class="reader-detail">正在启动硬件桥接程序……</p>
+      </div>
+      <div class="scanner-controls">
+        <form id="scan-form" class="scan-input">
+          <input id="uid" autocomplete="off" spellcheck="false" placeholder="手动输入卡号" aria-label="RFID 卡号">
+          <button type="submit">识别</button>
+        </form>
+        <div class="scanner-links">
+          <button type="button" class="text-button" id="demo-card">模拟测试卡 10086001</button>
+          <span>10 秒防重复录入</span>
+        </div>
+      </div>
+    </section>
+
+      <article class="result-panel" id="result-panel" aria-live="polite">
+        <div class="empty-state">
+          <div class="rfid-symbol" aria-hidden="true"></div>
+          <h2>放卡，即刻签到</h2>
+          <p>将学生卡靠近读卡器<br>识别结果会显示在这里</p>
+        </div>
+      </article>
+
+      <aside class="guide-panel">
+        <details class="rules-disclosure">
+          <summary><span>查看刷卡规则</span><span class="rules-indicator" aria-hidden="true">＋</span></summary>
+          <div class="rules-content">
+          <ol class="steps">
+          <li><b>01</b><div><strong>首次刷卡 · 签到</strong><span>不存在未签退记录时，新建签到记录。</span></div></li>
+          <li><b>02</b><div><strong>再次刷卡 · 签退</strong><span>存在未签退记录时，补充签退时间与时长。</span></div></li>
+          <li><b>03</b><div><strong>连续刷卡 · 忽略</strong><span>10 秒内重复请求不会写入数据库。</span></div></li>
+          </ol>
+          </div>
+        </details>
+        <div class="guide-actions">
+          <button id="enroll-open" disabled>登记学生卡</button>
+          <button id="clear-result" class="secondary" type="button">清除当前结果</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="lower-grid" aria-label="考勤记录">
+      <div class="records-heading"><h2>考勤记录</h2><span class="muted">每次刷卡自动保存</span></div>
+      <div class="record-tabs" role="tablist" aria-label="记录类型">
+        <button type="button" id="history-tab" role="tab" aria-selected="true" aria-controls="history-view" tabindex="0">全部记录</button>
+        <button type="button" id="present-tab" role="tab" aria-selected="false" aria-controls="present-view" tabindex="-1">当前在校 <span id="present-count" class="count-badge">0 人</span></button>
+      </div>
+      <article class="list-card" id="present-view" role="tabpanel" aria-labelledby="present-tab" hidden>
+        <p class="view-note">已签到、尚未签退的学生</p>
+        <div class="table-scroll" tabindex="0" aria-label="当前在校名单">
+          <table><thead><tr><th scope="col">学生 / 学号</th><th scope="col">班级</th><th scope="col">签到时间</th><th scope="col">签退时间</th><th scope="col">状态</th></tr></thead><tbody id="present-list"></tbody></table>
+        </div>
+      </article>
+
+      <article class="list-card history-card" id="history-view" role="tabpanel" aria-labelledby="history-tab">
+        <form id="history-filter" class="history-filter">
+          <input name="query" placeholder="搜索姓名、学号、班级或卡号" aria-label="搜索考勤记录">
+          <input name="date" type="date" aria-label="考勤日期">
+          <button type="submit">查询</button>
+          <button type="button" id="history-reset" class="secondary">重置</button>
+        </form>
+        <div class="table-scroll" tabindex="0" aria-label="考勤历史列表">
+          <table><thead><tr><th scope="col">学生 / 学号</th><th scope="col">班级</th><th scope="col">签到时间</th><th scope="col">签退时间</th><th scope="col">状态</th></tr></thead><tbody id="history-list"></tbody></table>
+        </div>
+        <p class="records-footnote">按签到日期查询 · 最多展示最近 200 条记录</p>
+      </article>
+    </section>
+    </div>
+  </main>
+
+  <dialog id="enroll-dialog">
+    <form id="enroll-form" method="dialog">
+      <div class="section-heading"><div><p class="eyebrow">STUDENT CARD</p><h2>登记学生卡</h2></div><button type="button" class="close" id="enroll-close" aria-label="关闭">×</button></div>
+      <p class="dialog-help">陌生卡不会自动写入考勤。请核对卡号并绑定学生信息。</p>
+      <label>RFID 卡号<input name="uid" required readonly></label>
+      <label>学号<input name="studentNo" required maxlength="32" placeholder="例如：20260101"></label>
+      <label>学生姓名<input name="name" required maxlength="40" placeholder="例如：张三"></label>
+      <label>班级<input name="className" required maxlength="60" placeholder="例如：软件工程 1 班"></label>
+      <button type="submit" class="submit-wide">确认绑定并签到</button>
+    </form>
+  </dialog>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

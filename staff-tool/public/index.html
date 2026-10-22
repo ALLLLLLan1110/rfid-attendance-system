@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>内部数据管理 · 一卡通考勤</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="eyebrow">一卡通考勤 / 内部人员</span><h1>数据管理</h1><p>资料与记录，在这里维护。</p></div>
+    <nav aria-label="管理功能">
+      <button class="nav-item active" data-view="students"><span>01</span> 学生资料</button>
+      <button class="nav-item" data-view="attendance"><span>02</span> 考勤记录</button>
+      <button class="nav-item" data-view="backups"><span>03</span> 备份与修改记录</button>
+      <button class="nav-item" data-view="browse"><span>04</span> 数据表浏览</button>
+    </nav>
+    <div class="sidebar-note"><span class="status-dot"></span><strong>本机数据库</strong><p>保存后刷新考勤页面即可生效。修正考勤时，请先暂停刷卡。</p><button class="text-button" id="show-location">查看数据库位置</button><button class="text-button" id="quit-tool">退出管理工具</button></div>
+  </aside>
+  <main>
+    <header><div><span class="eyebrow" id="view-kicker">学生信息与卡片绑定</span><h2 id="view-title">学生资料</h2><p id="view-description">搜索学生，点击「编辑」修改姓名、班级、学号或卡号。</p></div><div class="header-actions"><button id="backup-now" class="secondary">备份数据库</button><button id="refresh" class="secondary">刷新</button></div></header>
+    <section class="stats" aria-label="数据库概览"><span>学生 <strong id="stat-students">—</strong></span><span>已启用 <strong id="stat-active">—</strong></span><span>考勤记录 <strong id="stat-records">—</strong></span><span>未签退 <strong id="stat-present">—</strong></span><small>每次修改前自动备份</small></section>
+    <div id="banner" class="banner" role="alert" hidden></div>
+    <section class="workbench">
+      <div class="toolbar">
+        <form id="search-form" class="filters"><label class="search"><span class="sr-only">搜索</span><input id="query" type="search" placeholder="搜索姓名、学号、班级或卡号" autocomplete="off"></label><label id="date-control" hidden><span class="sr-only">签到日期</span><input id="date-filter" type="date" aria-label="签到日期"></label><label id="present-control" hidden><span class="sr-only">考勤状态</span><select id="present-filter"><option value="">全部状态</option><option value="true">仅未签退</option></select></label><button type="submit" class="secondary">查询</button></form>
+        <div id="backup-tabs" class="tabs" role="group" aria-label="备份与修改记录" hidden><button data-mode="files" class="selected">数据库备份</button><button data-mode="changes">修改记录</button></div>
+        <label id="table-control" hidden>选择数据表 <select id="table-select"></select></label>
+        <button id="add" class="primary">＋ 新增学生</button>
+      </div>
+      <div id="view-hint" class="view-hint">历史考勤会保留刷卡时的卡号，修改卡号不会覆盖旧记录。</div>
+      <details id="schema" hidden><summary>查看字段结构</summary><div id="schema-content"></div></details>
+      <div class="table-scroll"><table id="grid"><thead></thead><tbody></tbody></table><div id="empty" class="empty" hidden><strong>还没有数据</strong><p>可以新增一条，或调整查询条件。</p></div></div>
+      <footer class="pagination"><span id="total">正在读取数据库…</span><div><button class="secondary" id="previous" aria-label="上一页">上一页</button><span id="page-label">1 / 1</span><button class="secondary" id="next" aria-label="下一页">下一页</button></div></footer>
+    </section>
+    <p class="bottom-note">原始文件保存在本机。工具不需要连接读卡器，也不需要先启动考勤页面。</p>
+  </main>
+
+  <dialog id="student-dialog"><form id="student-form"><div class="dialog-heading"><div><span class="eyebrow">学生资料</span><h3 id="student-title">编辑学生</h3></div><button type="button" class="close" data-close aria-label="关闭">×</button></div><div class="dialog-body">
+    <p class="form-error" role="alert" hidden></p>
+    <div class="field-row"><label>学号<input name="student_no" required minlength="2" maxlength="32" pattern="[0-9A-Za-z_-]{2,32}" autocomplete="off"></label><label>姓名<input name="name" required maxlength="40" autocomplete="off"></label></div>
+    <label>班级<input name="class_name" required maxlength="60" autocomplete="off"></label>
+    <label>RFID 卡号<input name="card_uid" class="mono" required maxlength="96" autocomplete="off" spellcheck="false"><small>8—64 位偶数长度十六进制字符，支持粘贴带空格的卡号。</small></label>
+    <label>使用状态<select name="status"><option value="active">启用 · 可以刷卡考勤</option><option value="disabled">停用 · 保留资料与历史，不允许刷卡</option></select></label>
+    <label>修改说明 <span class="optional">可选</span><textarea name="reason" maxlength="300" rows="2" placeholder="例如：更正班级、更换遗失的卡片"></textarea></label>
+    <p class="form-note">学生编号由系统生成。更换卡号后，历史记录中的原卡号保持不变。</p>
+  </div><div class="dialog-footer"><button type="button" class="secondary" data-close>取消</button><button type="submit" class="primary">保存资料</button></div></form></dialog>
+
+  <dialog id="attendance-dialog"><form id="attendance-form"><div class="dialog-heading"><div><span class="eyebrow">考勤修正</span><h3 id="attendance-title">修改考勤</h3></div><button type="button" class="close" data-close aria-label="关闭">×</button></div><div class="dialog-body">
+    <p class="form-error" role="alert" hidden></p>
+    <label>学生<select name="student_id" required></select><small id="student-lock-hint">补记记录不会覆盖已有考勤。</small></label>
+    <label>签到时间 <span class="optional">本机时间</span><span class="time-field"><input name="check_in_at" type="datetime-local" required step="1"><button type="button" class="secondary" data-now="check_in_at">现在</button></span></label>
+    <label>签退时间 <span class="optional">留空表示未签退</span><span class="time-field"><input name="check_out_at" type="datetime-local" step="1"><button type="button" class="secondary" data-now="check_out_at">现在</button><button type="button" class="text-button" id="clear-checkout">清空</button></span></label>
+    <div class="duration" id="duration-preview">时长由系统根据时间自动计算。</div>
+    <label>修改说明 <span class="optional">可选</span><textarea name="reason" maxlength="300" rows="2" placeholder="例如：忘记签退，补充正确时间"></textarea></label>
+    <p class="form-note">新补记必须接在该学生最后一条记录之后。修改旧记录请直接点开原记录，避免影响下次刷卡判断。</p>
+  </div><div class="dialog-footer"><button type="button" id="delete-attendance" class="danger-text">删除本条记录</button><span class="spacer"></span><button type="button" class="secondary" data-close>取消</button><button type="submit" class="primary">保存考勤</button></div></form></dialog>
+
+  <dialog id="delete-dialog"><form id="delete-form"><div class="dialog-heading"><div><span class="eyebrow">删除确认</span><h3>删除这条考勤记录？</h3></div><button type="button" class="close" data-close aria-label="关闭">×</button></div><div class="dialog-body"><p class="form-error" role="alert" hidden></p><p id="delete-summary"></p><p class="form-note">删除前会备份整个数据库，并记录这次操作。学生资料与其他考勤不会删除。</p><label id="confirmation-label">输入记录编号确认<input name="confirmation" required autocomplete="off" inputmode="numeric"></label><label>删除原因<textarea name="reason" required maxlength="300" rows="2" placeholder="例如：误录的测试记录"></textarea></label></div><div class="dialog-footer"><button type="button" class="secondary" data-close>取消</button><button class="danger" type="submit">确认删除</button></div></form></dialog>
+
+  <dialog id="detail-dialog"><div class="dialog-heading"><h3 id="detail-title">数据库位置</h3><button type="button" class="close" data-close aria-label="关闭">×</button></div><div class="dialog-body" id="detail-content"></div><div class="dialog-footer"><button type="button" class="secondary" data-close>关闭</button></div></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
